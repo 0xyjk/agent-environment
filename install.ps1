@@ -152,7 +152,7 @@ function Ensure-Python {
     # Install Python via uv
     Write-Info "Installing Python ${PythonVersion} via uv..."
     New-Item -ItemType Directory -Path $PythonDir -Force | Out-Null
-    & $script:UvPath python install $PythonVersion | Out-Null
+    $null = & $script:UvPath python install $PythonVersion 2>&1
     if ($LASTEXITCODE -ne 0) { Stop-WithError "uv python install failed" }
     Write-Ok "Python ${PythonVersion} installed"
 }
@@ -169,7 +169,7 @@ function Setup-Venv {
     }
 
     $env:UV_PYTHON_INSTALL_DIR = $PythonDir
-    & $script:UvPath venv $VenvDir --python $PythonVersion --seed | Out-Null
+    $null = & $script:UvPath venv $VenvDir --python $PythonVersion --seed 2>&1
     if ($LASTEXITCODE -ne 0) { Stop-WithError "uv venv failed" }
     Write-Ok "Venv created: $VenvDir (with pip)"
 }
@@ -245,9 +245,9 @@ function Ensure-Node {
     # Install via fnm
     New-Item -ItemType Directory -Path $FnmDir -Force | Out-Null
     $env:FNM_DIR = $FnmDir
-    & $script:FnmPath install $NodeVersion | Out-Null
+    $null = & $script:FnmPath install $NodeVersion 2>&1
     if ($LASTEXITCODE -ne 0) { Stop-WithError "fnm install failed" }
-    & $script:FnmPath default $NodeVersion | Out-Null
+    $null = & $script:FnmPath default $NodeVersion 2>&1
 
     Write-Ok "Node.js v${NodeVersion} installed via fnm"
 }
