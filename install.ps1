@@ -244,6 +244,7 @@ function Ensure-Node {
     $env:FNM_DIR = $FnmDir
     & $script:FnmPath install $NodeVersion
     if ($LASTEXITCODE -ne 0) { Stop-WithError "fnm install failed" }
+    & $script:FnmPath default $NodeVersion
 
     Write-Ok "Node.js v${NodeVersion} installed via fnm"
 }
@@ -346,6 +347,10 @@ function Main {
     Write-Info "  uv          = $($script:UvPath)"
     Write-Info "  fnm         = $($script:FnmPath)"
     Write-Host ""
+
+    # Activate environment in current session
+    . (Join-Path $AgentsHome "env.ps1")
+    Write-Info "Environment activated in current session."
 }
 
 Main

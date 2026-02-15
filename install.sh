@@ -304,6 +304,7 @@ ensure_node() {
     # Install via fnm
     mkdir -p "$FNM_DIR"
     FNM_DIR="$FNM_DIR" "$FNM_PATH" install "$AGENTS_NODE_VERSION"
+    FNM_DIR="$FNM_DIR" "$FNM_PATH" default "$AGENTS_NODE_VERSION"
 
     # Verify
     node_bin="$(FNM_DIR="$FNM_DIR" "$FNM_PATH" exec --using="$AGENTS_NODE_VERSION" -- which node 2>/dev/null)" || true
@@ -432,6 +433,10 @@ main() {
     info "  uv          = $UV_PATH"
     info "  fnm         = $FNM_PATH"
     printf "\n"
+
+    # Activate environment in current session
+    . "$AGENTS_HOME/env.sh"
+    info "Environment activated in current session."
 }
 
 main "$@"
