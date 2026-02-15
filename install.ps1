@@ -12,6 +12,9 @@
 #   AGENTS_FNM_VERSION     - fnm version to install (default: latest)
 #   AGENTS_NODE_VERSION    - Node.js major version (default: 20)
 
+[CmdletBinding()]
+param()
+
 $ErrorActionPreference = "Stop"
 
 # ─── Configuration ────────────────────────────────────────────
@@ -149,7 +152,7 @@ function Ensure-Python {
     # Install Python via uv
     Write-Info "Installing Python ${PythonVersion} via uv..."
     New-Item -ItemType Directory -Path $PythonDir -Force | Out-Null
-    & $script:UvPath python install $PythonVersion
+    & $script:UvPath python install $PythonVersion | Out-Null
     if ($LASTEXITCODE -ne 0) { Stop-WithError "uv python install failed" }
     Write-Ok "Python ${PythonVersion} installed"
 }
@@ -166,7 +169,7 @@ function Setup-Venv {
     }
 
     $env:UV_PYTHON_INSTALL_DIR = $PythonDir
-    & $script:UvPath venv $VenvDir --python $PythonVersion --seed
+    & $script:UvPath venv $VenvDir --python $PythonVersion --seed | Out-Null
     if ($LASTEXITCODE -ne 0) { Stop-WithError "uv venv failed" }
     Write-Ok "Venv created: $VenvDir (with pip)"
 }
@@ -242,9 +245,9 @@ function Ensure-Node {
     # Install via fnm
     New-Item -ItemType Directory -Path $FnmDir -Force | Out-Null
     $env:FNM_DIR = $FnmDir
-    & $script:FnmPath install $NodeVersion
+    & $script:FnmPath install $NodeVersion | Out-Null
     if ($LASTEXITCODE -ne 0) { Stop-WithError "fnm install failed" }
-    & $script:FnmPath default $NodeVersion
+    & $script:FnmPath default $NodeVersion | Out-Null
 
     Write-Ok "Node.js v${NodeVersion} installed via fnm"
 }
