@@ -20,7 +20,7 @@ function Write-Ok    { param([string]$Message) Write-Host "[ok]    $Message" -Fo
 function Remove-InstalledFiles {
     Write-Info "Removing installed files from $AgentsHome..."
 
-    $dirs = @("bin", "python", "fnm")
+    $dirs = @("bin", "python", "venv", "fnm")
     foreach ($dir in $dirs) {
         $path = Join-Path $AgentsHome $dir
         if (Test-Path $path) {

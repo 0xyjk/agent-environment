@@ -61,6 +61,7 @@ remove_installed_files() {
 
     remove_dir  "$AGENTS_HOME/bin"
     remove_dir  "$AGENTS_HOME/python"
+    remove_dir  "$AGENTS_HOME/venv"
     remove_dir  "$AGENTS_HOME/fnm"
     remove_file "$AGENTS_HOME/env.sh"
     remove_file "$AGENTS_HOME/env.ps1"

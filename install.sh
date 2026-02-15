@@ -28,6 +28,7 @@ MIN_NODE_MAJOR="20"
 
 BIN_DIR="$AGENTS_HOME/bin"
 PYTHON_DIR="$AGENTS_HOME/python"
+VENV_DIR="$AGENTS_HOME/venv"
 FNM_DIR="$AGENTS_HOME/fnm"
 
 # ─── Output Helpers ───────────────────────────────────────────
@@ -205,6 +206,22 @@ ensure_python() {
     ok "Python ${AGENTS_PYTHON_VERSION} installed"
 }
 
+# ─── Python venv ─────────────────────────────────────────────
+
+setup_venv() {
+    info "Setting up Python venv..."
+
+    venv_python="$VENV_DIR/bin/python"
+    if [ -x "$venv_python" ]; then
+        ok "Venv already exists: $VENV_DIR"
+        return
+    fi
+
+    UV_PYTHON_INSTALL_DIR="$PYTHON_DIR" "$UV_PATH" venv "$VENV_DIR" \
+        --python "$AGENTS_PYTHON_VERSION" --seed
+    ok "Venv created: $VENV_DIR (with pip)"
+}
+
 # ─── fnm ─────────────────────────────────────────────────────
 
 get_fnm_asset() {
@@ -307,7 +324,7 @@ generate_env() {
 # Usage: . ~/.agents/env.sh
 
 export AGENTS_HOME="${AGENTS_HOME:-$HOME/.agents}"
-export PATH="$AGENTS_HOME/bin:$PATH"
+export PATH="$AGENTS_HOME/venv/bin:$AGENTS_HOME/bin:$PATH"
 export UV_PYTHON_INSTALL_DIR="$AGENTS_HOME/python"
 export FNM_DIR="$AGENTS_HOME/fnm"
 
@@ -390,19 +407,23 @@ main() {
     ensure_python
     printf "\n"
 
-    # Step 3: fnm
+    # Step 3: Python venv
+    setup_venv
+    printf "\n"
+
+    # Step 4: fnm
     resolve_fnm
     printf "\n"
 
-    # Step 4: Node.js
+    # Step 5: Node.js
     ensure_node
     printf "\n"
 
-    # Step 5: Generate env file
+    # Step 6: Generate env file
     generate_env
     printf "\n"
 
-    # Step 6: Patch shell profile
+    # Step 7: Patch shell profile
     patch_shell_profile
     printf "\n"
 

@@ -27,6 +27,7 @@ $MinNodeMajor = 20
 
 $BinDir = Join-Path $AgentsHome "bin"
 $PythonDir = Join-Path $AgentsHome "python"
+$VenvDir = Join-Path $AgentsHome "venv"
 $FnmDir = Join-Path $AgentsHome "fnm"
 
 # Track resolved paths
@@ -153,6 +154,23 @@ function Ensure-Python {
     Write-Ok "Python ${PythonVersion} installed"
 }
 
+# ─── Python venv ─────────────────────────────────────────────
+
+function Setup-Venv {
+    Write-Info "Setting up Python venv..."
+
+    $venvPython = Join-Path $VenvDir "Scripts" "python.exe"
+    if (Test-Path $venvPython) {
+        Write-Ok "Venv already exists: $VenvDir"
+        return
+    }
+
+    $env:UV_PYTHON_INSTALL_DIR = $PythonDir
+    & $script:UvPath venv $VenvDir --python $PythonVersion --seed
+    if ($LASTEXITCODE -ne 0) { Stop-WithError "uv venv failed" }
+    Write-Ok "Venv created: $VenvDir (with pip)"
+}
+
 # ─── fnm ─────────────────────────────────────────────────────
 
 function Resolve-Fnm {
@@ -240,7 +258,7 @@ function New-EnvFiles {
 # Usage: . ~/.agents/env.ps1
 
 $env:AGENTS_HOME = if ($env:AGENTS_HOME) { $env:AGENTS_HOME } else { Join-Path $HOME ".agents" }
-$env:PATH = "$env:AGENTS_HOME\bin;$env:PATH"
+$env:PATH = "$env:AGENTS_HOME\venv\Scripts;$env:AGENTS_HOME\bin;$env:PATH"
 $env:UV_PYTHON_INSTALL_DIR = "$env:AGENTS_HOME\python"
 $env:FNM_DIR = "$env:AGENTS_HOME\fnm"
 
@@ -303,11 +321,15 @@ function Main {
     Ensure-Python
     Write-Host ""
 
-    # Step 3: fnm
+    # Step 3: Python venv
+    Setup-Venv
+    Write-Host ""
+
+    # Step 4: fnm
     Resolve-Fnm
     Write-Host ""
 
-    # Step 4: Node.js
+    # Step 5: Node.js
     Ensure-Node
     Write-Host ""
 

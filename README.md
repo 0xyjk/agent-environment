@@ -65,6 +65,7 @@ After installation:
 │   ├── uv              # uv binary
 │   └── fnm             # fnm binary
 ├── python/             # uv-managed Python installations
+├── venv/               # Python venv with pip (--seed)
 ├── fnm/                # fnm-managed Node.js versions
 │   └── node-versions/
 ├── env.sh              # Source this to activate (Unix)
@@ -106,7 +107,7 @@ sh uninstall.sh
 pwsh uninstall.ps1
 ```
 
-This removes only the files created by the installer (`bin/`, `python/`, `fnm/`, `env.sh`, `env.ps1`) and cleans the shell profile. Other files in `$AGENTS_HOME` are left untouched. If `$AGENTS_HOME` is empty after cleanup, it is removed automatically.
+This removes only the files created by the installer (`bin/`, `python/`, `venv/`, `fnm/`, `env.sh`, `env.ps1`) and cleans the shell profile. Other files in `$AGENTS_HOME` are left untouched. If `$AGENTS_HOME` is empty after cleanup, it is removed automatically.
 
 ## Resolution Strategy
 
