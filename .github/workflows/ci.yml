@@ -7,6 +7,51 @@ on:
     branches: [main]
 
 jobs:
+  # ── Clean install: minimal container with no Python/Node/uv ──
+  test-clean-install:
+    runs-on: ubuntu-latest
+    container: debian:bookworm-slim
+    env:
+      AGENTS_HOME: /tmp/.agents-test
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install minimal dependencies
+        run: apt-get update && apt-get install -y curl unzip
+
+      - name: Run install.sh
+        run: sh install.sh
+
+      - name: Verify all files are downloaded
+        run: |
+          test -x "$AGENTS_HOME/bin/uv"
+          test -d "$AGENTS_HOME/python" && [ "$(ls -A "$AGENTS_HOME/python")" ]
+          test -x "$AGENTS_HOME/venv/bin/python"
+          test -d "$AGENTS_HOME/fnm" && [ "$(ls -A "$AGENTS_HOME/fnm")" ]
+          test -f "$AGENTS_HOME/env.sh"
+
+      - name: Verify tools work
+        run: |
+          . "$AGENTS_HOME/env.sh"
+          uv --version
+          node --version
+          python --version
+
+      - name: Re-run install.sh (idempotency)
+        run: sh install.sh
+
+      - name: Run uninstall.sh
+        run: sh uninstall.sh
+
+      - name: Verify uninstall cleaned up
+        run: |
+          [ ! -d "$AGENTS_HOME/bin" ]
+          [ ! -d "$AGENTS_HOME/python" ]
+          [ ! -d "$AGENTS_HOME/venv" ]
+          [ ! -d "$AGENTS_HOME/fnm" ]
+          [ ! -f "$AGENTS_HOME/env.sh" ]
+
+  # ── Runner tests: validate scripts work alongside pre-installed tools ──
   test-unix:
     strategy:
       fail-fast: false
