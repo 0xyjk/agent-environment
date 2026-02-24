@@ -11,16 +11,20 @@ jobs:
   test-clean-install:
     runs-on: ubuntu-latest
     container: debian:bookworm-slim
+    defaults:
+      run:
+        shell: bash
     env:
       AGENTS_HOME: /tmp/.agents-test
     steps:
       - uses: actions/checkout@v4
 
       - name: Install minimal dependencies
-        run: apt-get update && apt-get install -y curl unzip
+        shell: sh
+        run: apt-get update && apt-get install -y bash curl unzip
 
       - name: Run install.sh
-        run: sh install.sh
+        run: bash install.sh
 
       - name: Verify all files are downloaded
         run: |
@@ -38,10 +42,10 @@ jobs:
           python --version
 
       - name: Re-run install.sh (idempotency)
-        run: sh install.sh
+        run: bash install.sh
 
       - name: Run uninstall.sh
-        run: sh uninstall.sh
+        run: bash uninstall.sh
 
       - name: Verify uninstall cleaned up
         run: |
