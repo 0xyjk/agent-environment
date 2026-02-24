@@ -80,10 +80,18 @@ function Clean-ShellProfile {
 
     # Trim trailing empty lines
     while ($newLines.Count -gt 0 -and [string]::IsNullOrWhiteSpace($newLines[-1])) {
-        $newLines = $newLines[0..($newLines.Count - 2)]
+        if ($newLines.Count -eq 1) {
+            $newLines = @()
+        } else {
+            $newLines = $newLines[0..($newLines.Count - 2)]
+        }
     }
 
-    Set-Content -Path $profilePath -Value ($newLines -join "`n") -Encoding UTF8
+    if ($newLines.Count -eq 0) {
+        Set-Content -Path $profilePath -Value "" -NoNewline
+    } else {
+        Set-Content -Path $profilePath -Value ($newLines -join [System.Environment]::NewLine)
+    }
     Write-Ok "Cleaned $profilePath"
 }
 

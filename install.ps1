@@ -30,6 +30,13 @@ $PythonDir = Join-Path $AgentsHome "python"
 $VenvDir = Join-Path $AgentsHome "venv"
 $FnmDir = Join-Path $AgentsHome "fnm"
 
+# Detect architecture
+$script:Arch = if ([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture -eq [System.Runtime.InteropServices.Architecture]::Arm64) {
+    "aarch64"
+} else {
+    "x86_64"
+}
+
 # Track resolved paths
 $script:UvPath = $null
 $script:FnmPath = $null
@@ -100,7 +107,7 @@ function Resolve-Uv {
 
     # Download uv
     Write-Info "Downloading uv..."
-    $target = "x86_64-pc-windows-msvc"
+    $target = if ($script:Arch -eq "aarch64") { "aarch64-pc-windows-msvc" } else { "x86_64-pc-windows-msvc" }
 
     if ($UvVersion -eq "latest") {
         $url = "https://github.com/astral-sh/uv/releases/latest/download/uv-${target}.zip"
@@ -323,7 +330,7 @@ function Main {
     Write-Info "Install root: $AgentsHome"
     Write-Host ""
 
-    Write-Info "Platform: windows-x86_64"
+    Write-Info "Platform: windows-$($script:Arch)"
     Write-Host ""
 
     New-Item -ItemType Directory -Path $AgentsHome -Force | Out-Null
@@ -348,11 +355,11 @@ function Main {
     Ensure-Node
     Write-Host ""
 
-    # Step 5: Generate env files
+    # Step 6: Generate env files
     New-EnvFiles
     Write-Host ""
 
-    # Step 6: Patch shell profile
+    # Step 7: Patch shell profile
     Update-ShellProfile
     Write-Host ""
 

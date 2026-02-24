@@ -175,13 +175,13 @@ resolve_uv() {
     fi
 
     mkdir -p "$BIN_DIR"
-    tmpfile="$(mktemp)"
-    trap 'rm -f "$tmpfile"' EXIT
-    download "$url" "$tmpfile"
+    uv_tmpfile="$(mktemp)"
+    _cleanup_files="$_cleanup_files $uv_tmpfile"
+    download "$url" "$uv_tmpfile"
 
-    tar -xzf "$tmpfile" -C "$BIN_DIR" --strip-components=1
+    tar -xzf "$uv_tmpfile" -C "$BIN_DIR" --strip-components=1
     chmod +x "$BIN_DIR/uv"
-    rm -f "$tmpfile"
+    rm -f "$uv_tmpfile"
 
     UV_PATH="$BIN_DIR/uv"
     ok "uv installed: $UV_PATH ($("$UV_PATH" --version))"
@@ -266,16 +266,17 @@ resolve_fnm() {
     fi
 
     mkdir -p "$BIN_DIR"
-    tmpfile="$(mktemp)"
-    download "$url" "$tmpfile"
+    fnm_tmpfile="$(mktemp)"
+    _cleanup_files="$_cleanup_files $fnm_tmpfile"
+    download "$url" "$fnm_tmpfile"
 
     # fnm releases are zip archives
     if ! command -v unzip >/dev/null 2>&1; then
         die "unzip is required to extract fnm. Please install it."
     fi
-    unzip -o -q "$tmpfile" -d "$BIN_DIR"
+    unzip -o -q "$fnm_tmpfile" -d "$BIN_DIR"
     chmod +x "$BIN_DIR/fnm"
-    rm -f "$tmpfile"
+    rm -f "$fnm_tmpfile"
 
     FNM_PATH="$BIN_DIR/fnm"
     ok "fnm installed: $FNM_PATH ($("$FNM_PATH" --version))"
@@ -307,7 +308,7 @@ ensure_node() {
     FNM_DIR="$FNM_DIR" "$FNM_PATH" default "$AGENTS_NODE_VERSION"
 
     # Verify
-    node_bin="$(FNM_DIR="$FNM_DIR" "$FNM_PATH" exec --using="$AGENTS_NODE_VERSION" -- which node 2>/dev/null)" || true
+    node_bin="$(FNM_DIR="$FNM_DIR" "$FNM_PATH" exec --using="$AGENTS_NODE_VERSION" -- command -v node 2>/dev/null)" || true
     if [ -n "$node_bin" ]; then
         ok "Node.js installed: $("$node_bin" --version)"
     else
@@ -389,6 +390,10 @@ patch_shell_profile() {
 # ─── Main ────────────────────────────────────────────────────
 
 main() {
+    # Cleanup temp files on unexpected exit
+    _cleanup_files=""
+    trap 'rm -f $_cleanup_files' EXIT
+
     printf "\n"
     info "agent-environment installer"
     info "Install root: $AGENTS_HOME"
@@ -434,9 +439,12 @@ main() {
     info "  fnm         = $FNM_PATH"
     printf "\n"
 
-    # Activate environment in current session
-    . "$AGENTS_HOME/env.sh"
-    info "Environment activated in current session."
+    # Activate environment in current session (only effective when script is sourced, not piped)
+    if [ -f "$AGENTS_HOME/env.sh" ]; then
+        . "$AGENTS_HOME/env.sh"
+        info "Environment activated in current session."
+        info "If running via pipe (curl | sh), restart your terminal to activate."
+    fi
 }
 
 main "$@"

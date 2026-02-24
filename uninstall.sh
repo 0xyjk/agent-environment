@@ -89,17 +89,15 @@ clean_profile() {
         return 0
     fi
 
-    # Remove the marker line and the line immediately after it
+    # Remove the marker line and the source line (contains env.sh)
     tmpfile="$(mktemp)"
-    skip_next=0
     while IFS= read -r line || [ -n "$line" ]; do
-        if [ "$skip_next" = 1 ]; then
-            skip_next=0
-            continue
-        fi
         case "$line" in
             *"$marker"*)
-                skip_next=1
+                continue
+                ;;
+            *". \""*"/env.sh\""*|*"env.sh"*)
+                # Skip lines that source env.sh (the line after the marker)
                 continue
                 ;;
         esac
