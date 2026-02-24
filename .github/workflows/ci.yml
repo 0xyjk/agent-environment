@@ -1,0 +1,142 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test-unix:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    env:
+      AGENTS_HOME: ${{ github.workspace }}/.agents-test
+    steps:
+      - uses: actions/checkout@v4
+
+      # ── Install ──────────────────────────────────────────────
+      - name: Run install.sh
+        run: sh install.sh
+
+      # ── Verify install ───────────────────────────────────────
+      - name: Verify installed files exist
+        run: |
+          test -x "$AGENTS_HOME/bin/uv"
+          test -d "$AGENTS_HOME/python" && [ "$(ls -A "$AGENTS_HOME/python")" ]
+          test -x "$AGENTS_HOME/venv/bin/python"
+          test -d "$AGENTS_HOME/fnm" && [ "$(ls -A "$AGENTS_HOME/fnm")" ]
+          test -f "$AGENTS_HOME/env.sh"
+
+      - name: Verify tools work
+        run: |
+          . "$AGENTS_HOME/env.sh"
+          uv --version
+          node --version
+          python --version
+
+      # ── Idempotent re-run ────────────────────────────────────
+      - name: Re-run install.sh (idempotency)
+        run: sh install.sh
+
+      # ── Uninstall ────────────────────────────────────────────
+      - name: Run uninstall.sh
+        run: sh uninstall.sh
+
+      # ── Verify uninstall ─────────────────────────────────────
+      - name: Verify uninstall cleaned up
+        run: |
+          [ ! -d "$AGENTS_HOME/bin" ]
+          [ ! -d "$AGENTS_HOME/python" ]
+          [ ! -d "$AGENTS_HOME/venv" ]
+          [ ! -d "$AGENTS_HOME/fnm" ]
+          [ ! -f "$AGENTS_HOME/env.sh" ]
+
+      - name: Verify shell profile cleaned
+        run: |
+          # The install script patches a profile; after uninstall the marker should be gone.
+          # Determine which profile was patched (mirrors install.sh logic).
+          case "$(basename "${SHELL:-}")" in
+            zsh)  profile="$HOME/.zshrc" ;;
+            bash)
+              if [ "$(uname -s)" = "Darwin" ]; then
+                profile="$HOME/.bash_profile"
+              else
+                profile="$HOME/.bashrc"
+              fi
+              ;;
+            *)
+              for f in "$HOME/.zshrc" "$HOME/.bashrc" "$HOME/.bash_profile" "$HOME/.profile"; do
+                if [ -f "$f" ]; then profile="$f"; break; fi
+              done
+              ;;
+          esac
+          if [ -f "$profile" ]; then
+            ! grep -qF "# agent-environment" "$profile"
+          fi
+
+  test-windows:
+    runs-on: windows-latest
+    env:
+      AGENTS_HOME: ${{ github.workspace }}\.agents-test
+    steps:
+      - uses: actions/checkout@v4
+
+      # ── Install ──────────────────────────────────────────────
+      - name: Run install.ps1
+        shell: pwsh
+        run: ./install.ps1
+
+      # ── Verify install ───────────────────────────────────────
+      - name: Verify installed files exist
+        shell: pwsh
+        run: |
+          $ah = $env:AGENTS_HOME
+          if (-not (Test-Path (Join-Path $ah "bin\uv.exe")))         { throw "uv.exe missing" }
+          if (-not (Get-ChildItem (Join-Path $ah "python") -Recurse)) { throw "python dir empty" }
+          if (-not (Test-Path (Join-Path $ah "venv\Scripts\python.exe"))) { throw "venv python missing" }
+          if (-not (Get-ChildItem (Join-Path $ah "fnm") -Recurse))   { throw "fnm dir empty" }
+          if (-not (Test-Path (Join-Path $ah "env.ps1")))            { throw "env.ps1 missing" }
+
+      - name: Verify tools work
+        shell: pwsh
+        run: |
+          . (Join-Path $env:AGENTS_HOME "env.ps1")
+          uv --version
+          node --version
+          python --version
+
+      # ── Idempotent re-run ────────────────────────────────────
+      - name: Re-run install.ps1 (idempotency)
+        shell: pwsh
+        run: ./install.ps1
+
+      # ── Uninstall ────────────────────────────────────────────
+      - name: Run uninstall.ps1
+        shell: pwsh
+        run: ./uninstall.ps1
+
+      # ── Verify uninstall ─────────────────────────────────────
+      - name: Verify uninstall cleaned up
+        shell: pwsh
+        run: |
+          $ah = $env:AGENTS_HOME
+          if (Test-Path (Join-Path $ah "bin"))    { throw "bin dir still exists" }
+          if (Test-Path (Join-Path $ah "python")) { throw "python dir still exists" }
+          if (Test-Path (Join-Path $ah "venv"))   { throw "venv dir still exists" }
+          if (Test-Path (Join-Path $ah "fnm"))    { throw "fnm dir still exists" }
+          if (Test-Path (Join-Path $ah "env.ps1")) { throw "env.ps1 still exists" }
+
+      - name: Verify PowerShell profile cleaned
+        shell: pwsh
+        run: |
+          $profilePath = $PROFILE.CurrentUserAllHosts
+          if (Test-Path $profilePath) {
+            $content = Get-Content $profilePath -Raw -ErrorAction SilentlyContinue
+            if ($content -and $content.Contains("# agent-environment")) {
+              throw "Profile still contains agent-environment marker"
+            }
+          }
