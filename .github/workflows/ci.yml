@@ -36,8 +36,10 @@ jobs:
 
       - name: Verify tools work
         run: |
-          . "$AGENTS_HOME/env.sh"
+          export PATH="$AGENTS_HOME/venv/bin:$AGENTS_HOME/bin:$PATH"
+          export FNM_DIR="$AGENTS_HOME/fnm"
           uv --version
+          eval "$(fnm env --shell bash)"
           node --version
           python --version
 
