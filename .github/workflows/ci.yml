@@ -26,9 +26,10 @@ jobs:
       - name: Verify installed files exist
         run: |
           test -x "$AGENTS_HOME/bin/uv"
-          test -d "$AGENTS_HOME/python" && [ "$(ls -A "$AGENTS_HOME/python")" ]
+          # python/ and fnm/ may be absent when the runner already has a suitable version
+          if [ -d "$AGENTS_HOME/python" ]; then [ "$(ls -A "$AGENTS_HOME/python")" ]; fi
           test -x "$AGENTS_HOME/venv/bin/python"
-          test -d "$AGENTS_HOME/fnm" && [ "$(ls -A "$AGENTS_HOME/fnm")" ]
+          if [ -d "$AGENTS_HOME/fnm" ]; then [ "$(ls -A "$AGENTS_HOME/fnm")" ]; fi
           test -f "$AGENTS_HOME/env.sh"
 
       - name: Verify tools work
@@ -95,11 +96,14 @@ jobs:
         shell: pwsh
         run: |
           $ah = $env:AGENTS_HOME
-          if (-not (Test-Path (Join-Path $ah "bin\uv.exe")))         { throw "uv.exe missing" }
-          if (-not (Get-ChildItem (Join-Path $ah "python") -Recurse)) { throw "python dir empty" }
+          if (-not (Test-Path (Join-Path $ah "bin\uv.exe")))              { throw "uv.exe missing" }
+          # python/ and fnm/ may be absent when the runner already has a suitable version
+          $pyDir = Join-Path $ah "python"
+          if ((Test-Path $pyDir) -and -not (Get-ChildItem $pyDir -Recurse)) { throw "python dir empty" }
           if (-not (Test-Path (Join-Path $ah "venv\Scripts\python.exe"))) { throw "venv python missing" }
-          if (-not (Get-ChildItem (Join-Path $ah "fnm") -Recurse))   { throw "fnm dir empty" }
-          if (-not (Test-Path (Join-Path $ah "env.ps1")))            { throw "env.ps1 missing" }
+          $fnmDir = Join-Path $ah "fnm"
+          if ((Test-Path $fnmDir) -and -not (Get-ChildItem $fnmDir -Recurse)) { throw "fnm dir empty" }
+          if (-not (Test-Path (Join-Path $ah "env.ps1")))                 { throw "env.ps1 missing" }
 
       - name: Verify tools work
         shell: pwsh
